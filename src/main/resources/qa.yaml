@@ -1,0 +1,7 @@
+# Mongo DB Configuration
+mongo:
+  db: 
+    host: "localhost:27017"
+    username: "customer-db"
+    password: "sq5010"
+    database: "customer-db"

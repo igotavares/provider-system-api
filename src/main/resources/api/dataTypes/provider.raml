@@ -1,0 +1,24 @@
+#%RAML 1.0 DataType
+
+type: object
+properties:
+  id?:
+    type: string
+    required: false
+  companyName:
+    type: string
+    required: true
+  documentNumber:
+    type: string
+    required: true
+  contacts:
+    type: array
+    items: !include contact.raml
+    required: true
+  address:
+    type: !include address.raml
+    required: true
+  comments:
+    type: string
+    required: false
+examples: !include ../examples/provider-example.raml

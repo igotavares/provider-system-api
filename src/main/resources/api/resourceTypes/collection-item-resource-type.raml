@@ -1,0 +1,106 @@
+#%RAML 1.0 ResourceType
+
+description: A single <<resourcePathName|!singularize>> record
+get?:
+  description: Get the details from the <<resourcePathName|!singularize>> record
+  responses:
+    200:
+      body:
+        application/json:
+          type: <<typeItem>>
+          examples: <<exampleItem>>   
+    404:
+      body: 
+        application/json:
+          type: !include ../dataTypes/error-message.raml
+          example: !include ../examples/errors/error-example-404.raml    
+    500: 
+      body: 
+        application/json:
+          type: !include ../dataTypes/error-message.raml
+          example: !include ../examples/errors/error-example-500.raml
+put?:
+  description: Updates the <<resourcePathName|!singularize>> record.
+  body: 
+    application/json:
+       type: <<typeItem>>
+       examples: <<examplePutRequest>>         
+  responses:
+    200:    
+      body:
+        application/json:
+          type: !include ../dataTypes/message.raml
+          example: !include ../examples/message-example.raml
+    400: 
+      body: 
+        application/json:
+          type: !include ../dataTypes/error-message.raml
+          example: !include ../examples/errors/error-example-400.raml         
+    422:
+      body: 
+        application/json:
+          type: !include ../dataTypes/error-message.raml
+          example: !include ../examples/errors/error-example-422.raml        
+    500: 
+      body: 
+        application/json:
+          type: !include ../dataTypes/error-message.raml
+          example: !include ../examples/errors/error-example-500.raml
+patch?:
+  description: Updates just one field in <<resourcePathName|singularize>> record.
+  body: 
+    application/json:
+      type: <<resourcePathName>>
+  responses:
+    204:
+      body:
+        application/json:
+          type: !include ../dataTypes/message.raml
+          example: !include ../examples/message-example.raml
+    400: 
+      body: 
+        application/json:
+          type: !include ../dataTypes/error-message.raml
+          example: !include ../examples/errors/error-example-400.raml         
+    422:
+      body: 
+        application/json:
+          type: !include ../dataTypes/error-message.raml
+          example: !include ../examples/errors/error-example-422.raml       
+    500: 
+      body: 
+        application/json:
+          type: !include ../dataTypes/error-message.raml
+          example: !include ../examples/errors/error-example-500.raml   
+delete?:
+  description: Inactivate the <<resourcePathName|!singularize>> record.
+  responses:
+    200:
+      body:
+        application/json:
+          type: !include ../dataTypes/message.raml
+          example: !include ../examples/message-example.raml
+    404: 
+      body: 
+        application/json:
+          type: !include ../dataTypes/error-message.raml
+          example: !include ../examples/errors/error-example-404.raml                     
+    500: 
+      body: 
+        application/json:
+          type: !include ../dataTypes/error-message.raml
+          example: !include ../examples/errors/error-example-500.raml
+options:
+  description: Route for CORS preflight
+  responses: 
+    200:
+      headers: &headerCors
+        Access-Control-Allow-Origin:
+          required: false
+          example: '*'
+        Access-Control-Allow-Methods:
+          required: false
+          example: 'GET, DELETE, PUT'
+        Access-Control-Allow-Headers:
+          required: false
+          example: 'Content-Type'

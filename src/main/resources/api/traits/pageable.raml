@@ -1,0 +1,19 @@
+#%RAML 1.0 Trait
+
+queryParameters:
+      limit:
+        description: |
+          The number of records to fetch.
+        required: false
+        type: integer
+        example: 10
+        minimum: 1
+        default: 30
+      offset:
+        description: |
+          The starting record to fetch.
+        required: false
+        type: integer
+        example: 1
+        minimum: 1
+        default: 1

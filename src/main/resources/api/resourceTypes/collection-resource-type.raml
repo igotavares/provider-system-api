@@ -1,0 +1,65 @@
+#%RAML 1.0 ResourceType
+
+description: Collection of <<resourcePathName>>
+get?:
+  description: Get a list of <<resourcePathName>>
+  responses:
+    200:
+      body:
+        application/json:
+          type: <<typeCollection>>
+    400: 
+      body: 
+        application/json:
+          type: !include ../dataTypes/error-message.raml
+          examples: !include ../examples/errors/error-example-400.raml                   
+    500: 
+      body: 
+        application/json:
+          type: !include ../dataTypes/error-message.raml
+          example: !include ../examples/errors/error-example-500.raml
+post?:
+  description: Create a new <<resourcePathName|!singularize>> record.
+  body:
+    application/json:
+      type: <<typeItem>>
+      examples: <<examplePostRequest>>
+  responses:
+    201:
+      headers: 
+        Location:
+          description: URL of the new <<resourcePathName | !singularize>> information
+          example: /<<resourcePathName>>/8f19cb50-3f57-4d38
+      body:
+        application/json:
+          type: !include ../dataTypes/message.raml
+          example: !include ../examples/message-example.raml
+    400: 
+      body: 
+        application/json:
+          type: !include ../dataTypes/error-message.raml
+          example: !include ../examples/errors/error-example-400.raml
+    422:
+      body: 
+        application/json:
+          type: !include ../dataTypes/error-message.raml
+          example: !include ../examples/errors/error-example-422.raml
+    500: 
+      body: 
+        application/json:
+          type: !include ../dataTypes/error-message.raml
+          example: !include ../examples/errors/error-example-500.raml
+options:
+  description: Route for CORS preflight
+  responses: 
+    200:
+      headers: &headerCors
+        Access-Control-Allow-Origin:
+          required: false
+          example: '*'
+        Access-Control-Allow-Methods:
+          required: false
+          example: 'GET, POST'
+        Access-Control-Allow-Headers:
+          required: false
+          example: 'Content-Type'

@@ -1,0 +1,57 @@
+#%RAML 1.0
+baseUri: https://anypoint.mulesoft.com/mocking/api/v1/links/9ce52c39-809c-4236-b990-47250e8ea9e1/ # 
+title: System Provider API
+version: v1
+
+securitySchemes:
+     basic:
+        type: Basic Authentication
+
+resourceTypes:
+  collection-resource-type: !include resourceTypes/collection-resource-type.raml
+  item-resource-type: !include resourceTypes/collection-item-resource-type.raml
+
+traits:
+  orderable: !include traits/orderable.raml
+  pageable: !include traits/pageable.raml
+  searchable: !include traits/searchable.raml
+
+types:
+  user: !include dataTypes/user.raml
+  providers: !include dataTypes/providers.raml
+  provider: !include dataTypes/provider.raml
+
+/login:
+  post:
+    securedBy: [basic]
+    body: 
+      application/json: 
+        type: user
+        examples: !include examples/user-example.raml 
+    responses:
+      200:
+        body:
+          application/json: 
+            type: user
+            examples: !include examples/user-example.raml
+  options:
+    
+/providers:
+  securedBy: [basic] 
+  type: 
+    collection-resource-type:
+      typeCollection: providers
+      typeItem: provider
+      examplePostRequest: !include examples/provider-no-id-example.raml
+  get:
+    is: [searchable]
+  post:
+  /{id}:
+    type: 
+      item-resource-type:
+        typeItem: provider
+        exampleItem: !include examples/provider-example.raml
+        examplePutRequest: !include examples/provider-no-id-example.raml
+    get:
+    put:
+    delete:

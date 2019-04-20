@@ -1,0 +1,14 @@
+#%RAML 1.0 Trait
+
+queryParameters:
+     orderBy:
+       description: |
+         Order by some field.
+       type: string
+       required: false
+     order:
+       description: |
+         Order by descend or ascend.
+       enum: [desc, asc]
+       default: desc
+       required: false

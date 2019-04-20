@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:mongo="http://www.mulesoft.org/schema/mule/mongo"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/mongo http://www.mulesoft.org/schema/mule/mongo/current/mule-mongo.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+	<flow name="delete-providers-flow" doc:id="40bbfc46-d1b0-4b10-b841-af6c82a1127e" >
+		<ee:transform doc:name="Transform Message" doc:id="5e897a10-8ad8-40a7-bff1-013e336563c8">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"_id": {
+			"\$oid": attributes.uriParams.id
+		} 
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="d7115f10-09aa-4033-b5d2-58785e621f72" message="#[payload]"/>
+		<mongo:remove-documents doc:name="Remove Provider By Id" doc:id="15411817-02ba-4696-8b06-2324b663ba06" config-ref="MongoDB_Config" collectionName="providers"/>
+		<logger level="INFO" doc:name="Logger" doc:id="5feff080-9b62-4637-84b9-33db667c8ef4" message="#[payload]"/>
+		<set-payload value='{"message": "Provider deleted successfully"}' doc:name="Set Payload" doc:id="37fd514b-3662-407c-855e-cfc5607d4fb5" />
+	</flow>
+	<flow name="put-providers-flow" doc:id="b6ebba77-3b90-4386-8148-8806acbe7db2" >
+		<ee:transform doc:name="Transform Message" doc:id="7a33f48a-20b3-4dfa-8ac9-ab05935d44bc" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json	
+---
+payload]]></ee:set-payload>
+			</ee:message>
+			  <ee:variables >
+                <ee:set-variable variableName="query" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"_id" : {
+        "\$oid": attributes.uriParams.id
+    }
+}]]></ee:set-variable>
+            </ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="c583562a-ce62-4d34-99ed-60457a5a50b2" message="#[attributes.uriParams.id] + #[payload]"/>
+		<mongo:update-documents doc:name="Update Provider By Id" collectionName="providers" doc:id="caef1964-8e65-4fd7-aca6-e86f0999f6cf" config-ref="MongoDB_Config" multipleUpdate="false">
+			<mongo:find-query ><![CDATA[#[vars.query]]]></mongo:find-query>
+			<mongo:content-to-update ><![CDATA[#[payload]]]></mongo:content-to-update>
+		</mongo:update-documents>
+		<logger level="INFO" doc:name="Logger" doc:id="7d33a420-6412-4ae0-b997-18b5dcb9891f" message="#[payload]"/>
+		<validation:is-true doc:name="Valid if Provider Exists" doc:id="a3cbe355-33cf-46cd-9389-de1987d3fcea" expression='#[payload.matchedCount."\$numberLong" != "0"]'>
+			<error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:NOT_FOUND" />
+		</validation:is-true>
+		<set-payload value='{"message":  "Provider successfully changed"}' doc:name="Set Payload" doc:id="ffc6ad64-8fed-47c4-af0f-199f66773396" />
+	</flow>
+	<flow name="get-providers-by-id-flow" doc:id="3733c3eb-d80e-4ef9-91ba-0a87eb0af0e7" >
+		<ee:transform doc:name="Transform Message" doc:id="5e897a10-8ad8-40a7-bff1-013e336563c8">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"_id": {
+			"\$oid": attributes.uriParams.id
+		} 
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="df3bd281-389c-4278-85a8-217598d121ba" message='#[payload]'/>
+		<mongo:find-one-document doc:name="Find Provider By Id" collectionName="providers" doc:id="6bf4c2af-d462-43fc-a393-100053aeb06f" config-ref="MongoDB_Config">
+			<error-mapping sourceType="MONGO:UNKNOWN" targetType="APP:NOT_FOUND" />
+		</mongo:find-one-document>
+		<logger level="INFO" doc:name="Logger" doc:id="32d51768-8fbc-4e19-afba-4d25a9dc22fb" message="#[payload]"/>
+		<ee:transform doc:name="Transform Message" doc:id="91bd16ee-df23-43e1-bc4b-85d390f3ef66" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload mapObject
+	if ("$$" == "_id") 
+		(("id"): $."\$oid")
+	else 
+		(($$): $)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="post-providers-flow" doc:id="533653cb-7d18-4d5f-b4f8-66790dbb9ad6" >
+		<ee:transform doc:name="Transform Message" doc:id="fdb9cc83-934b-472a-bdc4-58266ee04788" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json	
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="e52b3b2c-aed3-42a5-9fed-4f1bf8763108" message="#[payload]"/>
+		<mongo:insert-document doc:name="Insert Provider" doc:id="55c5b370-9dd2-410e-9cf7-46d901b129c5" config-ref="MongoDB_Config" collectionName="providers">
+			<error-mapping sourceType="MONGO:WRITE" targetType="APP:DUPLICATE_KEY" />
+		</mongo:insert-document>
+		<logger level="INFO" doc:name="Logger" doc:id="425dde3e-185c-4806-a7f3-2fd1a4ba9e75" message="#[payload]"/>
+		<ee:transform doc:name="Transform Message" doc:id="11e9e2d0-76e9-43e6-b54b-36421a6bdbba">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"id": payload
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-variable value="201" doc:name="Set Created Http Status Variable" doc:id="d23d18b0-b99a-42b1-b155-c04d3f7d45dc" variableName="httpStatus"/>
+	</flow>
+	<flow name="get-providers-flow" doc:id="e12ab87d-70f6-4350-ac0a-712507fb3c39" >
+		<ee:transform doc:name="Transform Message" doc:id="853d4638-0270-42ec-9951-ca66c89ca545" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+
+var companyName = attributes.queryParams.companyName
+var documentNumber = attributes.queryParams.documentNumber
+---
+{
+	(companyName: { "\$regex": ".*" ++ companyName ++ ".*" }) if (companyName != null),
+	(documentNumber: documentNumber) if (documentNumber != null)
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="de3a953b-2626-4635-a2d4-601b1d867b0f" message="#[payload]"/>
+		<mongo:find-documents collectionName="providers" doc:name="Find Providers" doc:id="c1b1c39a-7037-4c02-924e-a0beac0a10c9" config-ref="MongoDB_Config">
+		</mongo:find-documents>
+		<logger level="INFO" doc:name="Logger" doc:id="44076715-84d3-4935-ad29-202c33c63679" message="#[payload]"/>
+		<ee:transform doc:name="Transform Message" doc:id="22c30921-25dd-40d2-b344-e9a2ffaa2125" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map(provider, index) ->
+	provider mapObject 
+		if ("$$" == "_id") 
+			(("id"): $)
+		else 
+			(($$): $)
+	]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	
+</mule>

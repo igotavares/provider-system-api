@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" 
+	  xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" 
+	  xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" 
+	  xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" 
+	  xmlns:spring="http://www.mulesoft.org/schema/mule/spring" xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd       http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd       http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd       http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd       http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
+http://www.mulesoft.org/schema/mule/spring http://www.mulesoft.org/schema/mule/spring/current/mule-spring.xsd">
+    <http:listener-config name="api-httpListenerConfig">
+        <http:listener-connection host="${http.host}" port="${http.port.http}" />
+    </http:listener-config>
+    <apikit:config name="api-config" raml="api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <flow name="api-main">
+        <http:listener config-ref="api-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers><![CDATA[#[output application/java
+---
+{
+	"Content-Type" : "application/json",
+	"Access-Control-Allow-Methods" : "GET,PUT,POST,DELETE,OPTIONS",
+	"Access-Control-Allow-Headers" : "Content-Type,Authorization",
+	"Access-Control-Allow-Origin" : "*"
+}]]]></http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body><![CDATA[#[payload]]]></http:body>
+                <http:headers><![CDATA[#[output application/java
+---
+{
+	"Content-Type" : "application/json",
+	"Access-Control-Allow-Origin" : "*",
+	"Access-Control-Allow-Methods" : "GET,PUT,POST,DELETE,OPTIONS",
+	"Access-Control-Allow-Headers" : "Content-Type,Authorization"
+}]]]></http:headers>
+            </http:error-response>
+        </http:listener>
+		<apikit:router config-ref="api-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="MULE:NOT_PERMITTED">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unauthorized"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">401</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate> 
+            <on-error-propagate type="HTTP:BASIC_AUTHENTICATION">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Forbidden"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">403</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate> 
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+             <on-error-propagate type="APP:NOT_FOUND">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform doc:id="3ae97581-ab16-403e-8521-9331630c2883">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus"><![CDATA[415]]></ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APP:DUPLICATE_KEY">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Customer already registered"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">422</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+             
+            <on-error-propagate type="ANY" enableNotifications="true" logException="true">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Internal Server Error"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">500</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="api-console">
+        <http:listener config-ref="api-httpListenerConfig" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="api-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+     <flow name="post:\login:application\json:api-config">
+    	<logger level="INFO" doc:name="Logger" doc:id="a2204dcd-d6ec-49ff-9cac-4229de02a953" message="#[attributes.headers]"/>
+		<http:basic-security-filter realm="mule" doc:id="6aca5ca8-3bd9-4936-bc9e-88f922b8ee49"/>
+    </flow>
+    <flow name="options:\login:api-config">
+    	<logger level="INFO" message="options:\login:application\json:api-config" />
+    </flow>
+    <flow name="put:\providers\(id):application\json:api-config">
+    	<http:basic-security-filter realm="mule" />
+        <spring:authorization-filter doc:name="Authorization filter" doc:id="6762d371-6a58-4d4c-bfe4-8bca29b77e98" requiredAuthorities="ROLE_ADMIN,ROLE_PROVIDER"/>
+		<flow-ref doc:name="put-providers-flow" doc:id="ada71cde-ed24-4c9e-94e5-c165ffd710e9" name="put-providers-flow" />
+    </flow>
+    <flow name="delete:\providers\(id):api-config">
+    	<http:basic-security-filter realm="mule" />
+    	<spring:authorization-filter doc:name="Authorization filter" doc:id="a1e2f38f-e131-4092-ad50-e57612d03f5b" requiredAuthorities="ROLE_ADMIN"/>
+        <flow-ref doc:name="delete-providers-flow" doc:id="c5c6e831-ced2-4ff2-b3b4-e1e2d75e78bc" name="delete-providers-flow" />
+    </flow>
+    <flow name="get:\providers:api-config">
+    	<http:basic-security-filter realm="mule" />
+	    <spring:authorization-filter doc:name="Authorization filter" doc:id="6762d371-6a58-4d4c-bfe4-8bca29b77e98" requiredAuthorities="ROLE_ADMIN,ROLE_SHOPKEEPER,ROLE_PROVIDER"/>
+        <flow-ref doc:name="get-providers-flow" doc:id="081acfd7-3244-4bb6-9afa-eb3d3e65209b" name="get-providers-flow" />
+    </flow>
+    <flow name="get:\providers\(id):api-config">
+    	<http:basic-security-filter realm="mule" />
+	    <spring:authorization-filter doc:name="Authorization filter" doc:id="6762d371-6a58-4d4c-bfe4-8bca29b77e98" requiredAuthorities="ROLE_ADMIN,ROLE_SHOPKEEPER,ROLE_PROVIDER"/>
+        <flow-ref doc:name="get-providers-by-id-flow" doc:id="9685b5ad-8e76-44de-9f94-f15c15e3a245" name="get-providers-by-id-flow" />
+    </flow>
+    <flow name="post:\providers:application\json:api-config">
+    	<http:basic-security-filter realm="mule" />
+	    <spring:authorization-filter doc:name="Authorization filter" doc:id="6762d371-6a58-4d4c-bfe4-8bca29b77e98" requiredAuthorities="ROLE_ADMIN"/>
+        <flow-ref doc:name="post-providers-flow" doc:id="cf7b5857-7b5d-4c66-8ee4-40cf51d402a2" name="post-providers-flow" />
+    </flow>
+    <flow name="options:\providers:api-config">
+        <logger level="INFO" message="options:\providers:api-config" />
+    </flow>
+    <flow name="options:\providers\(id):api-config">
+        <logger level="INFO" message="options:\providers\(id):api-config" />
+    </flow>
+</mule>
